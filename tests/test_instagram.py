@@ -68,3 +68,11 @@ async def test_fetch_reel_data_raises_on_non_200():
     async with _mock_client("not found", status_code=404) as client:
         with pytest.raises(InstagramFetchError):
             await fetch_reel_data("deadbeef123", client)
+
+
+@pytest.mark.asyncio
+async def test_fetch_reel_data_raises_on_malformed_json():
+    html = '<script>window.__additionalData = "{not valid json";</script>'
+    async with _mock_client(html) as client:
+        with pytest.raises(InstagramFetchError):
+            await fetch_reel_data("deadbeef123", client)

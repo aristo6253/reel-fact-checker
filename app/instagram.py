@@ -58,11 +58,13 @@ async def fetch_reel_data(shortcode: str, client: httpx.AsyncClient) -> ReelData
     # `\\`, `\/`, and `\uXXXX` uniformly — no hand-rolled regex needed) and
     # yields the inner JSON text; the second pass parses that text into the
     # actual object.
-    inner_json_text = json.loads('"' + match.group(1) + '"')
-    payload = json.loads(inner_json_text)
-
-    caption_edges = payload.get("edge_media_to_caption", {}).get("edges", [])
-    caption = caption_edges[0]["node"]["text"] if caption_edges else ""
+    try:
+        inner_json_text = json.loads('"' + match.group(1) + '"')
+        payload = json.loads(inner_json_text)
+        caption_edges = payload.get("edge_media_to_caption", {}).get("edges", [])
+        caption = caption_edges[0]["node"]["text"] if caption_edges else ""
+    except (json.JSONDecodeError, KeyError, IndexError) as exc:
+        raise InstagramFetchError(f"could not parse post data for {shortcode}") from exc
 
     thumbnail_match = re.search(r'<meta property="og:image" content="([^"]*)"', body)
     thumbnail_url = html_lib.unescape(thumbnail_match.group(1)) if thumbnail_match else None
