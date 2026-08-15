@@ -170,3 +170,13 @@ metered Claude spend needs a floor:
   real usage shows how often it would actually apply.
 - Everything already deferred in README §6 (caching, queueing, managed
   transcription, GPU inference, multi-region) — unchanged.
+- **Video-frame/visual-claim analysis** (added mid-build, after this spec
+  was written): §3's frame sampling and §5/§7's OCR-via-Claude-vision
+  reasoning are cut from v1 entirely, at the user's request. v1 works from
+  caption text + spoken-audio transcript only — no frames, no images sent
+  to Claude. See the implementation plan's "Scope Revision" section
+  (`docs/superpowers/plans/2026-08-15-webapp-v1.md`) for what changed and
+  how to re-add it. This spec's body text above still describes the
+  original frame-inclusive design and was not rewritten — treat this note
+  as the authoritative statement of current v1 scope where the two
+  disagree.
