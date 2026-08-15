@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+httpx
+anthropic
+faster-whisper
+numpy
+jinja2
+pytest
+pytest-asyncio
