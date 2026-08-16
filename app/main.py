@@ -4,16 +4,26 @@ import anthropic
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from app.config import daily_cap, rate_limiter, settings
 from app.pipeline import run_pipeline
 
 app = FastAPI()
 
+templates = Jinja2Templates(directory="app/templates")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
 
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
+
+@app.get("/")
+def index(request: Request):
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/api/v1/check")

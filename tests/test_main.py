@@ -44,3 +44,10 @@ def test_check_returns_503_when_daily_cap_reached():
 
     assert response.status_code == 503
     assert "daily" in response.text.lower()
+
+
+def test_index_page_renders_form():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'id="reel-url"' in response.text
+    assert 'id="results"' in response.text
