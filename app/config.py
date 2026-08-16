@@ -6,7 +6,10 @@ from app.rate_limit import DailyCap, RateLimiter
 
 @dataclass
 class Settings:
-    anthropic_api_key: str = os.environ.get("ANTHROPIC_API_KEY", "")
+    # None (not "") when unset, so passing this straight to anthropic.Anthropic()
+    # lets the SDK fall through to ANTHROPIC_AUTH_TOKEN / an `ant auth login`
+    # profile instead of being locked to a literal ANTHROPIC_API_KEY.
+    anthropic_api_key: str | None = os.environ.get("ANTHROPIC_API_KEY")
     daily_request_cap: int = int(os.environ.get("DAILY_REQUEST_CAP", "200"))
     rate_limit_per_minute: int = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "10"))
 
