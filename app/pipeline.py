@@ -35,25 +35,29 @@ async def run_pipeline(
     transcript: str | None = None
     video_path: str | None = None
 
-    if reel.video_url:
-        video_path = await download_video(reel.video_url, http_client)
-        try:
-            if has_narration(extract_audio_rms(video_path)):
-                yield {"event": "transcribing", "data": {}}
-                transcript = transcribe(video_path)
-        finally:
-            os.remove(video_path)
+    try:
+        if reel.video_url:
+            video_path = await download_video(reel.video_url, http_client)
+            try:
+                if has_narration(extract_audio_rms(video_path)):
+                    yield {"event": "transcribing", "data": {}}
+                    transcript = transcribe(video_path)
+            finally:
+                os.remove(video_path)
 
-    bundle = assemble(reel=reel, source_url=url, transcript=transcript)
+        bundle = assemble(reel=reel, source_url=url, transcript=transcript)
 
-    yield {"event": "extracting_claims", "data": {}}
-    extraction = extract_claims(bundle, anthropic_client)
+        yield {"event": "extracting_claims", "data": {}}
+        extraction = extract_claims(bundle, anthropic_client)
 
-    if not extraction.claims:
-        yield {"event": "done", "data": {"headline_verdict": "No factual claims detected.", "claims": []}}
+        if not extraction.claims:
+            yield {"event": "done", "data": {"headline_verdict": "No factual claims detected.", "claims": []}}
+            return
+
+        yield {"event": "verifying_claims", "data": {}}
+        result = verify_claims(extraction, bundle, anthropic_client)
+    except Exception:
+        yield {"event": "error", "data": {"message": "Something went wrong while checking this reel."}}
         return
-
-    yield {"event": "verifying_claims", "data": {}}
-    result = verify_claims(extraction, bundle, anthropic_client)
 
     yield {"event": "done", "data": result.model_dump()}

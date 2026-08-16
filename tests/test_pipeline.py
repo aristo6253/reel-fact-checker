@@ -92,3 +92,16 @@ async def test_pipeline_skips_video_steps_when_no_video_url():
     mock_download.assert_not_called()
     event_names = [e["event"] for e in events]
     assert event_names == ["fetching", "extracting_claims", "verifying_claims", "done"]
+
+
+@pytest.mark.asyncio
+async def test_pipeline_yields_error_when_downstream_stage_raises():
+    reel = ReelData(username="u", caption="A caption claim.", video_url=None, product_type="clips")
+
+    with patch("app.pipeline.extract_shortcode", return_value="abc123"), patch(
+        "app.pipeline.fetch_reel_data", new=AsyncMock(return_value=reel)
+    ), patch("app.pipeline.extract_claims", side_effect=RuntimeError("Claude API timeout")):
+        events = [e async for e in run_pipeline("https://www.instagram.com/reel/abc123/", MagicMock(), MagicMock())]
+
+    assert events[-1]["event"] == "error"
+    assert events[-1]["data"]["message"] == "Something went wrong while checking this reel."
