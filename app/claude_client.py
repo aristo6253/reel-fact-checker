@@ -105,6 +105,8 @@ def verify_claims(extraction: ExtractionResult, bundle: ClaimBundle, client: ant
         )
 
     schema = VerdictResult.model_json_schema()
+    # ponytail: stop_reason == "pause_turn" (10+ search iterations) is not handled — would need a
+    # resend-the-conversation loop; revisit if reels with many factual claims hit this in practice.
     response = client.messages.create(
         model="claude-opus-5",
         max_tokens=16000,
@@ -113,7 +115,10 @@ def verify_claims(extraction: ExtractionResult, bundle: ClaimBundle, client: ant
         messages=[{"role": "user", "content": _verification_prompt(factual_claims, bundle)}],
     )
 
-    text_block = next(b for b in response.content if b.type == "text")
+    if response.stop_reason == "refusal":
+        raise RuntimeError("Claude declined to verify claims for this reel (stop_reason=refusal)")
+
+    text_block = next(b for b in reversed(response.content) if b.type == "text")
     verified = VerdictResult.model_validate(json.loads(text_block.text))
     verified.claims.extend(non_factual_verdicts)
     return verified

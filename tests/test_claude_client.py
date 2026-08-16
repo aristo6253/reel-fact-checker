@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from unittest.mock import MagicMock
 
 from app.claim_bundle import ClaimBundle
@@ -77,3 +78,49 @@ def test_verify_claims_calls_model_for_factual_claims():
     call_kwargs = mock_client.messages.create.call_args.kwargs
     assert call_kwargs["model"] == "claude-opus-5"
     assert call_kwargs["tools"][0]["type"] == "web_search_20260209"
+
+
+def test_verify_claims_uses_last_text_block_not_first():
+    bundle = ClaimBundle(caption="The moon is made of cheese", transcript=None, source_url="https://x/")
+    extraction = ExtractionResult(claims=[Claim(text="The moon is made of cheese", classification="factual")])
+
+    expected = VerdictResult(
+        headline_verdict="Contains one false claim",
+        claims=[
+            Verdict(
+                claim="The moon is made of cheese",
+                classification="factual",
+                verdict="false",
+                explanation="The moon is rock, not cheese.",
+                sources=[Source(url="https://nasa.gov", reliability="high", note="official source")],
+            )
+        ],
+    )
+    mock_response = MagicMock()
+    mock_response.stop_reason = "end_turn"
+    mock_response.content = [
+        MagicMock(type="text", text="Let me search for this..."),
+        MagicMock(type="server_tool_use"),
+        MagicMock(type="web_search_tool_result"),
+        MagicMock(type="text", text=expected.model_dump_json()),
+    ]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+
+    result = verify_claims(extraction, bundle, mock_client)
+
+    assert result == expected
+
+
+def test_verify_claims_raises_clear_error_on_refusal():
+    bundle = ClaimBundle(caption="The moon is made of cheese", transcript=None, source_url="https://x/")
+    extraction = ExtractionResult(claims=[Claim(text="The moon is made of cheese", classification="factual")])
+
+    mock_response = MagicMock()
+    mock_response.stop_reason = "refusal"
+    mock_response.content = []
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_response
+
+    with pytest.raises(RuntimeError, match="refusal"):
+        verify_claims(extraction, bundle, mock_client)
