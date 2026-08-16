@@ -31,15 +31,13 @@ async def check(url: str, request: Request):
     client_ip = request.client.host if request.client else "unknown"
     if not rate_limiter.allow(client_ip):
         return StreamingResponse(
-            iter([_sse({"event": "error", "data": {"message": "Rate limit exceeded. Try again in a minute."}})]),
+            iter([_sse({"event": "failed", "data": {"message": "Rate limit exceeded. Try again in a minute."}})]),
             media_type="text/event-stream",
-            status_code=429,
         )
     if not daily_cap.allow():
         return StreamingResponse(
-            iter([_sse({"event": "error", "data": {"message": "Daily request limit reached. Try again tomorrow."}})]),
+            iter([_sse({"event": "failed", "data": {"message": "Daily request limit reached. Try again tomorrow."}})]),
             media_type="text/event-stream",
-            status_code=503,
         )
 
     daily_cap.record()

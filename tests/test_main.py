@@ -28,21 +28,23 @@ def test_check_streams_sse_events_on_success():
     assert "event: done" in response.text
 
 
-def test_check_returns_429_when_rate_limited():
+def test_check_returns_200_with_failed_event_when_rate_limited():
     with patch("app.main.rate_limiter") as mock_limiter:
         mock_limiter.allow.return_value = False
         response = client.get("/api/v1/check?url=https://www.instagram.com/reel/abc123/")
 
-    assert response.status_code == 429
+    assert response.status_code == 200
+    assert "event: failed" in response.text
     assert "rate limit" in response.text.lower()
 
 
-def test_check_returns_503_when_daily_cap_reached():
+def test_check_returns_200_with_failed_event_when_daily_cap_reached():
     with patch("app.main.daily_cap") as mock_cap:
         mock_cap.allow.return_value = False
         response = client.get("/api/v1/check?url=https://www.instagram.com/reel/abc123/")
 
-    assert response.status_code == 503
+    assert response.status_code == 200
+    assert "event: failed" in response.text
     assert "daily" in response.text.lower()
 
 

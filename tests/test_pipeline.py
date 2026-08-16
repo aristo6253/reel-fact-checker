@@ -15,7 +15,7 @@ async def test_pipeline_yields_error_on_fetch_failure():
     ):
         events = [e async for e in run_pipeline("https://www.instagram.com/reel/abc123/", MagicMock(), MagicMock())]
 
-    assert events[-1]["event"] == "error"
+    assert events[-1]["event"] == "failed"
     assert "couldn't access this reel" in events[-1]["data"]["message"].lower()
 
 
@@ -103,5 +103,5 @@ async def test_pipeline_yields_error_when_downstream_stage_raises():
     ), patch("app.pipeline.extract_claims", side_effect=RuntimeError("Claude API timeout")):
         events = [e async for e in run_pipeline("https://www.instagram.com/reel/abc123/", MagicMock(), MagicMock())]
 
-    assert events[-1]["event"] == "error"
+    assert events[-1]["event"] == "failed"
     assert events[-1]["data"]["message"] == "Something went wrong while checking this reel."
