@@ -64,6 +64,22 @@ async def test_fetch_reel_data_parses_image_post_without_video():
 
 
 @pytest.mark.asyncio
+async def test_fetch_reel_data_parses_carousel_post():
+    html = open("tests/fixtures/embed_captioned_carousel.html").read()
+    async with _mock_client(html) as client:
+        data = await fetch_reel_data("DcEUnB4GzbL", client)
+
+    assert data.username == "advice_page"
+    assert data.video_url is None
+    assert data.product_type == "carousel"
+    assert data.image_urls == [
+        "https://instagram.fexample.fna.fbcdn.net/slide1.jpg",
+        "https://instagram.fexample.fna.fbcdn.net/slide2.jpg",
+        "https://instagram.fexample.fna.fbcdn.net/slide3.jpg",
+    ]
+
+
+@pytest.mark.asyncio
 async def test_fetch_reel_data_raises_on_non_200():
     async with _mock_client("not found", status_code=404) as client:
         with pytest.raises(InstagramFetchError):
