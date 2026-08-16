@@ -1,6 +1,8 @@
 import os
 from dataclasses import dataclass
 
+from app.rate_limit import DailyCap, RateLimiter
+
 
 @dataclass
 class Settings:
@@ -10,3 +12,6 @@ class Settings:
 
 
 settings = Settings()
+
+rate_limiter = RateLimiter(per_minute=settings.rate_limit_per_minute)
+daily_cap = DailyCap(cap=settings.daily_request_cap)
