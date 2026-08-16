@@ -157,7 +157,15 @@ metered Claude spend needs a floor:
   same "couldn't access this reel" message as README §7.
 - **Daily spend cap reached** → fail closed with a clear message, not a
   silent queue or degraded response.
-- **Rate limit hit** → standard 429 with a clear retry message.
+- **Rate limit hit** → a clear retry message.
+  **Revised (final review, post-build):** the original wording specified
+  a "standard 429" — but `GET /api/v1/check`'s transport is SSE, and a
+  browser `EventSource` cannot read the body of a non-2xx response, so a
+  literal 429/503 makes the message it carries undeliverable to the only
+  client that exists. The delivery mechanism is HTTP 200 with a single
+  `failed` SSE event carrying the message; the enforcement (denying the
+  request) is unchanged. This is the transport-correct form of the same
+  requirement, not a weakening of it.
 
 ## 9. What's explicitly deferred
 
