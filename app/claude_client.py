@@ -82,7 +82,7 @@ def extract_claims(
     content.append({"type": "text", "text": prompt})
 
     response = client.messages.create(
-        model="claude-sonnet-5",
+        model="claude-haiku-4-5",
         max_tokens=16000,
         messages=[{"role": "user", "content": content}],
     )
@@ -197,7 +197,7 @@ def verify_claims(extraction: ExtractionResult, bundle: ClaimBundle, client: ant
     # than a clear one — confirmed live against a reel with a genuinely large verdict.
     verify_max_tokens = 32000
     response = _create_message(
-        client, model="claude-sonnet-5", max_tokens=verify_max_tokens, tools=tools, messages=messages
+        client, model="claude-haiku-4-5", max_tokens=verify_max_tokens, tools=tools, messages=messages
     )
 
     # A long web-search turn (many claims, heavy research) can stop at an internal
@@ -215,7 +215,7 @@ def verify_claims(extraction: ExtractionResult, bundle: ClaimBundle, client: ant
             {"role": "assistant", "content": response.content},
         ]
         response = _create_message(
-            client, model="claude-sonnet-5", max_tokens=verify_max_tokens, tools=tools, messages=messages
+            client, model="claude-haiku-4-5", max_tokens=verify_max_tokens, tools=tools, messages=messages
         )
 
     if response.stop_reason == "max_tokens":

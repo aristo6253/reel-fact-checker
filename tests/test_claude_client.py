@@ -57,7 +57,7 @@ def test_extract_claims_returns_parsed_result():
 
     assert result == expected
     call_kwargs = mock_client.messages.create.call_args.kwargs
-    assert call_kwargs["model"] == "claude-sonnet-5"
+    assert call_kwargs["model"] == "claude-haiku-4-5"
     content = call_kwargs["messages"][0]["content"]
     assert len(content) == 1
     assert "cheese" in content[0]["text"]
@@ -122,7 +122,7 @@ def test_verify_claims_calls_model_for_factual_claims():
     assert result == expected
     assert result.trustworthiness_score == 15
     call_kwargs = mock_client.messages.stream.call_args.kwargs
-    assert call_kwargs["model"] == "claude-sonnet-5"
+    assert call_kwargs["model"] == "claude-haiku-4-5"
     assert call_kwargs["tools"][0]["type"] == "web_search_20250305"
     assert "trustworthiness_score" in call_kwargs["messages"][0]["content"]
     assert "practical_guidance" in call_kwargs["messages"][0]["content"]
