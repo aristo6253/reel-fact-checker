@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+httpx
+anthropic
+python-dotenv
+pywebpush
+faster-whisper
+numpy
+jinja2
+pytest
+pytest-asyncio

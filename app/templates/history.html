@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reel Fact-Checker — History</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#1a1a1a">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <style>
+    :root {
+      --border: #e2e2e2;
+      --muted: #6b7280;
+      --bg-card: #fafafa;
+      --verified: #1a7f37;
+      --verified-bg: #eaf7ec;
+      --false: #c53030;
+      --false-bg: #fdecec;
+      --unverified: #9a6b00;
+      --unverified-bg: #fdf5e0;
+      --na: #6b7280;
+      --na-bg: #f0f0f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a1a;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+      line-height: 1.5;
+    }
+    .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+    h1 { font-size: 1.5rem; margin: 0; }
+    a.back-link { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+    a.back-link:hover { text-decoration: underline; }
+    .empty-state { color: var(--muted); padding: 40px 0; text-align: center; }
+    .entry {
+      display: flex;
+      gap: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .entry:hover { background: var(--bg-card); }
+    .entry img {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background: #e2e2e2;
+    }
+    .entry-body { min-width: 0; flex: 1; }
+    .entry-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .entry-username { font-weight: 600; }
+    .entry-tag { color: var(--muted); font-size: 0.8rem; }
+    .entry-verdict {
+      margin: 0 0 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .entry-date { color: var(--muted); font-size: 0.8rem; }
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .score-badge.high { color: var(--verified); background: var(--verified-bg); }
+    .score-badge.moderate { color: var(--unverified); background: var(--unverified-bg); }
+    .score-badge.low { color: var(--false); background: var(--false-bg); }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Check History</h1>
+    <a class="back-link" href="/">← New check</a>
+  </div>
+
+  {% if not entries %}
+  <p class="empty-state">No reels checked yet.</p>
+  {% endif %}
+
+  {% for e in entries %}
+  <a class="entry" href="/?url={{ e.url | urlencode }}">
+    {% if e.thumbnail_url %}
+    <img src="{{ e.thumbnail_url }}" alt="">
+    {% else %}
+    <img alt="">
+    {% endif %}
+    <div class="entry-body">
+      <div class="entry-meta">
+        {% if e.trustworthiness_score is not none %}
+        <span class="score-badge {{ 'high' if e.trustworthiness_score >= 80 else ('moderate' if e.trustworthiness_score >= 50 else 'low') }}">{{ e.trustworthiness_score }}</span>
+        {% endif %}
+        <span class="entry-username">{{ '@' + e.username if e.username else 'Unknown user' }}</span>
+        <span class="entry-tag">{{ e.product_type }}</span>
+      </div>
+      <p class="entry-verdict">{{ e.headline_verdict }}</p>
+      <span class="entry-date" data-iso="{{ e.checked_at }}"></span>
+    </div>
+  </a>
+  {% endfor %}
+
+  <script>
+    document.querySelectorAll(".entry-date").forEach((el) => {
+      const date = new Date(el.dataset.iso);
+      el.textContent = Number.isNaN(date.getTime()) ? el.dataset.iso : date.toLocaleString();
+    });
+  </script>
+</body>
+</html>

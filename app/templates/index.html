@@ -1,0 +1,294 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reel Fact-Checker</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#1a1a1a">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <style>
+    :root {
+      --border: #e2e2e2;
+      --muted: #6b7280;
+      --bg-card: #fafafa;
+      --verified: #1a7f37;
+      --verified-bg: #eaf7ec;
+      --false: #c53030;
+      --false-bg: #fdecec;
+      --unverified: #9a6b00;
+      --unverified-bg: #fdf5e0;
+      --na: #6b7280;
+      --na-bg: #f0f0f0;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a1a;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.75rem; margin-bottom: 20px; }
+    form { display: flex; gap: 8px; margin-bottom: 8px; }
+    #reel-url {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #1a1a1a;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #333; }
+    button:active { transform: scale(0.97); }
+    #status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      min-height: 1.2em;
+      margin: 12px 0 24px;
+    }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--muted);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .reveal {
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 220ms ease-out, transform 220ms ease-out;
+    }
+    .reveal.revealed { opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) {
+      .spinner { animation-duration: 1.4s; }
+      .reveal { transform: none; transition: opacity 220ms ease-out; }
+    }
+    .cache-warning {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: var(--unverified-bg);
+      color: var(--unverified);
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+    .cache-warning button {
+      background: white;
+      color: var(--unverified);
+      border: 1px solid var(--unverified);
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .cache-warning button:hover { background: var(--unverified-bg); }
+    .reel-card {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-card);
+      margin-bottom: 20px;
+    }
+    .reel-card img {
+      width: 110px;
+      height: 110px;
+      object-fit: cover;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background: #e2e2e2;
+    }
+    .reel-meta { min-width: 0; }
+    .reel-meta .username { font-weight: 600; margin: 0 0 6px; }
+    .reel-meta .caption { margin: 0 0 8px; white-space: pre-wrap; }
+    .reel-gallery {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin: -12px 0 20px;
+      padding-bottom: 4px;
+    }
+    .reel-gallery img {
+      width: 90px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background: #e2e2e2;
+    }
+    .reel-meta .tags { color: var(--muted); font-size: 0.85rem; }
+    section {
+      margin-bottom: 20px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    section h2 { font-size: 1rem; margin: 0 0 8px; }
+    #transcript-text { white-space: pre-wrap; margin: 0; }
+    .headline-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 24px 0 16px;
+    }
+    #headline { font-weight: 600; font-size: 1.05rem; }
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .score-badge.high { color: var(--verified); background: var(--verified-bg); }
+    .score-badge.moderate { color: var(--unverified); background: var(--unverified-bg); }
+    .score-badge.low { color: var(--false); background: var(--false-bg); }
+    .claim-card {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--na);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .claim-card.verified { border-left-color: var(--verified); }
+    .claim-card.false { border-left-color: var(--false); }
+    .claim-card.unverified { border-left-color: var(--unverified); }
+    .claim-card.not_applicable { border-left-color: var(--na); }
+    .claim-header { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+    .claim-text { font-weight: 600; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .badge.verified { color: var(--verified); background: var(--verified-bg); }
+    .badge.false { color: var(--false); background: var(--false-bg); }
+    .badge.unverified { color: var(--unverified); background: var(--unverified-bg); }
+    .badge.not_applicable { color: var(--na); background: var(--na-bg); }
+    .classification-tag { color: var(--muted); font-size: 0.8rem; }
+    .explanation { margin: 0 0 10px; line-height: 1.6; }
+    .practical-guidance {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-size: 0.88rem;
+      margin: 0 0 10px;
+    }
+    .sources { margin: 4px 0 0; padding: 0; list-style: none; }
+    .source-item { padding: 8px 0; border-top: 1px solid var(--border); }
+    .source-item:first-child { border-top: none; padding-top: 4px; }
+    .source-row { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+    .source-row a {
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: #1a1a1a;
+      text-decoration: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .source-row a:hover { text-decoration: underline; }
+    .reliability-badge {
+      flex-shrink: 0;
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .reliability-badge.high { color: var(--verified); background: var(--verified-bg); }
+    .reliability-badge.medium { color: #1d4ed8; background: #dbeafe; }
+    .reliability-badge.low { color: var(--unverified); background: var(--unverified-bg); }
+    .reliability-badge.questionable { color: var(--false); background: var(--false-bg); }
+    .source-note { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.4; }
+    .page-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .page-header h1 { margin-bottom: 20px; flex: 1; }
+    .page-header a { color: var(--muted); text-decoration: none; font-size: 0.9rem; white-space: nowrap; }
+    .page-header a:hover { text-decoration: underline; }
+    .header-links { display: flex; align-items: baseline; gap: 14px; }
+    #notify-button {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    #notify-button:hover { background: var(--bg-card); }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Reel Fact-Checker</h1>
+    <div class="header-links">
+      <button id="notify-button" type="button">Enable notifications</button>
+      <a href="/history">History →</a>
+    </div>
+  </div>
+  <form id="check-form">
+    <input id="reel-url" type="url" placeholder="Paste an Instagram reel URL" required>
+    <button type="submit">Check</button>
+  </form>
+  <p id="status">
+    <span id="status-spinner" class="spinner" hidden></span>
+    <span id="status-text"></span>
+  </p>
+  <div id="cache-warning" class="cache-warning reveal" hidden>
+    <span id="cache-warning-text"></span>
+    <button id="recheck-button" type="button">Re-check anyway</button>
+  </div>
+  <div id="reel-info" class="reel-card reveal" hidden>
+    <img id="reel-thumbnail" alt="" hidden>
+    <div class="reel-meta">
+      <p class="username" id="reel-username"></p>
+      <p class="caption" id="reel-caption"></p>
+      <p class="tags" id="reel-tags"></p>
+    </div>
+  </div>
+  <div id="reel-gallery" class="reel-gallery reveal" hidden></div>
+  <section id="transcript-section" class="reveal" hidden>
+    <h2>Audio Transcript</h2>
+    <p id="transcript-text"></p>
+  </section>
+  <div class="headline-row">
+    <span id="score-badge" class="score-badge" hidden></span>
+    <span id="headline"></span>
+  </div>
+  <div id="results"></div>
+  <script>
+    window.VAPID_PUBLIC_KEY = "{{ vapid_public_key or '' }}";
+  </script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
